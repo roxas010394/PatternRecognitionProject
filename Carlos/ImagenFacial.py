@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: cp1252 -*-
 from math import pow, cos, sin, pi
 from PIL import Image, ImageOps
 import matplotlib.pyplot as plt
@@ -8,8 +10,10 @@ class ImagenFacial:
     #nombreArchivo es el nombre de la imagen
     #K son las regiones en las que se va a dividir la imagen
         try:
-            self.__ImagenCara = Image.open(nombreArchivo)
+	    print "Cara\\"+nombreArchivo
+            self.__ImagenCara = Image.open("Caras\\"+nombreArchivo)
             self.__ImagenCara = ImageOps.grayscale(self.__ImagenCara)
+	self.mostrarImagen()
         except IOError:
             print "El archivo \" "+nombreArchivo+ "\" que usted intenta abrir no existe."
             exit()
@@ -63,11 +67,18 @@ class ImagenFacial:
 
     def crearHistograma(self):
         listaHistograma = []
+	listaRet = []
         regiones = self.crearRegiones()
         for i in regiones:
             for j in i:
                 listaHistograma.append(self.LocalBinaryPattern2(8, 1, j))
-        return  listaHistograma
+		
+		for i in range(0, len(listaHistograma)):
+			if listaHistograma[i][1] == "No-Uniforme":
+				listaHistograma.pop(i)
+			else:
+				listaRet.append(listaHistograma.pop(i)[0])
+        return  listaRet
 
     def crearHistograma2(self):
         listaHistograma = []
@@ -102,9 +113,9 @@ class ImagenFacial:
             grises.append(self.funcionS(imagenLBP[xp[i], yp[i]] - pixCentro))
         decimal = int(self.convDecimal(P, grises))
         if self.calcularTransicionesBitABit(decimal):
-            return decimal, "Uniforme", bin(decimal)
+            return decimal, "Uniforme"
         else:
-            return decimal, "No-Uniforme", bin(decimal)
+            return decimal, "No-Uniforme"
 
     def LocalBinaryPattern(self, region):
         imagenLBP = region.load()
@@ -167,8 +178,27 @@ class ImagenFacial:
             return True
 
     def guardarVector(self):
-        print self.crearHistograma()
+		archivo = open("caracteristicas.dat", "a")
+		archivo.write(str(self.crearHistograma())+"\n")
+		archivo.close()
 
 
-hola = ImagenFacial("rikura.jpg", 8)
-hola.guardarVector()
+"""hola = ImagenFacial("rikura.jpg", 8)
+hola.guardarVector()"""
+
+def __init__():
+	print "Elige una opción"
+	print "1.- Entrenar"
+	print "2.- Probar"
+	print "Elige una opción"
+	opcion = input()
+	if opcion == 1:
+		print "Escribe el nombre de la foto [nombre.extensión] a entrenar"
+		imagen = raw_input()
+		img = ImagenFacial(imagen, 8)
+		img.guardarVector()
+	elif opcion == 2:
+		print "Escribe el nombre de la foto [nombre.extensión] a probar" 
+
+__init__()
+
