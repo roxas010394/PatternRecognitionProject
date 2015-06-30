@@ -10,10 +10,10 @@ class ImagenFacial:
     #nombreArchivo es el nombre de la imagen
     #K son las regiones en las que se va a dividir la imagen
         try:
-	    print "Cara\\"+nombreArchivo
-            self.__ImagenCara = Image.open("Caras\\"+nombreArchivo)
+	    print "Caras/"+nombreArchivo
+            self.__ImagenCara = Image.open("Caras/"+nombreArchivo)
             self.__ImagenCara = ImageOps.grayscale(self.__ImagenCara)
-	self.mostrarImagen()
+	#self.mostrarImagen()
         except IOError:
             print "El archivo \" "+nombreArchivo+ "\" que usted intenta abrir no existe."
             exit()
@@ -67,6 +67,7 @@ class ImagenFacial:
 
     def crearHistograma(self):
         listaHistograma = []
+        listaHistogramaNoUniforme = []
 	listaRet = []
         regiones = self.crearRegiones()
         for i in regiones:
@@ -75,19 +76,21 @@ class ImagenFacial:
 		
 		for i in range(0, len(listaHistograma)):
 			if listaHistograma[i][1] == "No-Uniforme":
-				listaHistograma.pop(i)
+				listaHistogramaNoUniforme.append(listaHistograma.pop(i))
 			else:
 				listaRet.append(listaHistograma.pop(i)[0])
-        return  listaRet
+        return  listaRet, listaHistogramaNoUniforme
 
     def crearHistograma2(self):
         listaHistograma = []
+        listaHistogramaNoUniforme = []
         regiones = self.crearRegiones()
-        print regiones
         for i in regiones:
             for j in i:
-                listaHistograma = listaHistograma + self.LocalBinaryPattern(j)
-        return  listaHistograma
+                listaHistograma.append(self.LocalBinaryPattern(j)[0])
+                listaHistogramaNoUniforme.append(self.LocalBinaryPattern(j)[1])
+	  
+        return  listaHistograma, listaHistogramaNoUniforme
 
 
     def LocalBinaryPattern2(self, P, R, region):
@@ -125,6 +128,7 @@ class ImagenFacial:
         pixCentro = imagenLBP[posX, posY]
         grises = []
         listaT = []
+        listaNT = []
         for i in range(0, tamY - 2):
             posX = 1
             for j in range(0, tamX - 2):
@@ -140,10 +144,10 @@ class ImagenFacial:
                 if self.calcularTransicionesBitABit(decimal):
                     listaT.append(decimal)
                 else:
-                    continue #print str(decimal)+", No-Uniforme"
+                    listaNT.append(decimal)
                 posX = posX + 1
             posY = posY + 1
-        return listaT
+        return listaT, listaNT
 
     def convDecimal(self, nBIts, lista):
         acum = 0
@@ -179,26 +183,62 @@ class ImagenFacial:
 
     def guardarVector(self):
 		archivo = open("caracteristicas.dat", "a")
-		archivo.write(str(self.crearHistograma())+"\n")
+		histogramas = self.crearHistograma2()
+		print self.crearVectorDePropiedades(histogramas[0], histogramas[1])
+		archivo.write(str(self.crearVectorDePropiedades(histogramas[0], histogramas[1]))+"\n")
 		archivo.close()
+		
+    def crearVectorDePropiedades(self, Lnumeros, LNumerosNU):
+				      #[Spot, Spot/Flat, LineEnd, Edge, Corner, otherTextures, Non-Uniform]
+		listaHist = []
+		for region in Lnumeros:
+		  listaVectores = [0, 0, 0, 0, 0, 0, 0]
+		  for num in region:
+		      if num == 0:
+			listaVectores[0] = listaVectores[0] + 1
+		      elif num == 255:
+			listaVectores[1] = listaVectores[1] + 1
+		      elif num ==249:
+			listaVectores[2] = listaVectores[2] + 1
+		      elif num == 60:
+			listaVectores[3] = listaVectores[3] + 1
+		      elif num == 248:
+			listaVectores[4] = listaVectores[4] + 1
+		      else:
+			listaVectores[5] = listaVectores[5] + 1
+		  listaVectores[6] = listaVectores[6] + len(LNumerosNU)
+		  listaHist.append( listaVectores)
+		return listaHist
+    def muestraHistograma(self, datos):
+	      plt.bar(datos)
+	      plt.show()
 
 
 """hola = ImagenFacial("rikura.jpg", 8)
 hola.guardarVector()"""
 
 def __init__():
-	print "Elige una opción"
-	print "1.- Entrenar"
-	print "2.- Probar"
-	print "Elige una opción"
-	opcion = input()
-	if opcion == 1:
-		print "Escribe el nombre de la foto [nombre.extensión] a entrenar"
-		imagen = raw_input()
-		img = ImagenFacial(imagen, 8)
-		img.guardarVector()
-	elif opcion == 2:
-		print "Escribe el nombre de la foto [nombre.extensión] a probar" 
+	while 1:
+	  
+	  print "Elige una opción"
+	  print "1.- Entrenar"
+	  print "2.- Probar"
+	  print "3.-Salir"
+	  print "Elige una opción"
+	  opcion = input()
+	  if opcion == 1:
+		  print "Escribe el nombre de la foto [nombre.extensión] a entrenar"
+		  imagen = raw_input()
+		  img = ImagenFacial(imagen, 8)
+		  img.guardarVector()
+	  elif opcion == 2:
+		  print "Escribe el nombre de la foto [nombre.extensión] a probar" 
+	  elif opcion == 3:
+	    exit()
 
 __init__()
-
+#spot 	11111111
+#spot/flat 00000000
+#LineEnd 11111001
+#edge 	00111100
+#corner 	11111000
