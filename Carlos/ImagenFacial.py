@@ -87,8 +87,8 @@ class ImagenFacial:
         regiones = self.crearRegiones()
         for i in regiones:
             for j in i:
-                listaHistograma.append(self.LocalBinaryPattern(j)[0])
-                listaHistogramaNoUniforme.append(self.LocalBinaryPattern(j)[1])
+                listaHistograma.append(self.LocalBinaryPattern(8, 1, j)[0])
+                listaHistogramaNoUniforme.append(self.LocalBinaryPattern(8, 1, j)[1])
 	  
         return  listaHistograma, listaHistogramaNoUniforme
 
@@ -100,11 +100,13 @@ class ImagenFacial:
         yc = R
 		xcLimite = tamX - xc
 		ycLimite = tamY - yc
-		
-		listaLBP = []
+		print str(tamX)+", "+str(tamY)
+		listaLBPU = []
+		listaLBPNU = []
 		
 		for y in range(yc, ycLimite):
 			for x in range(xc, xcLimite)
+				print str(x)+", "+str(y)
 
 				xp = []
 				yp = []
@@ -123,11 +125,11 @@ class ImagenFacial:
 					grises.append(self.funcionS(imagenLBP[xp[i], yp[i]] - pixCentro))
 				decimal = int(self.convDecimal(P, grises))
 				if self.calcularTransicionesBitABit(decimal):
-					listaLBP.append(decimal, "Uniforme")
+					listaLBP.append(decimal)
 				else:
-					listaLBP.append(decimal, "No-Uniforme")
+					listaLBPNU.append(decimal)
 
-		return listaLBP
+		return listaLBPU, listaLBPNU
 	"""def LocalBinaryPattern(self, region):
         imagenLBP = region.load()
         posX = 1
