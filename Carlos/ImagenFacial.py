@@ -93,34 +93,42 @@ class ImagenFacial:
         return  listaHistograma, listaHistogramaNoUniforme
 
 
-    def LocalBinaryPattern2(self, P, R, region):
+    def LocalBinaryPattern(self, P, R, region):
         imagenLBP = region.load()
         tamX, tamY = region.size
-        tamX = tamX/2 #xc
-        tamY = tamY/2 #yc
+        xc = R
+        yc = R
+		xcLimite = tamX - xc
+		ycLimite = tamY - yc
+		
+		listaLBP = []
+		
+		for y in range(yc, ycLimite):
+			for x in range(xc, xcLimite)
 
-        xp = []
-        yp = []
+				xp = []
+				yp = []
 
-        aux = []
+				aux = []
 
-        for i in range(0, P):
-            xp.append(int(round(tamX + R*cos((2*pi*i)/P))))
-            yp.append(int(round(tamY + R*sin((2*pi*i)/P))))
+				for i in range(0, P):
+					xp.append(int(round(x + R*cos((2*pi*i)/P))))
+					yp.append(int(round(y + R*sin((2*pi*i)/P))))
 
-        grises = []
-        pixCentro = imagenLBP[tamX, tamY]
-        #grises.append(pixCentro)
+				grises = []
+				pixCentro = imagenLBP[x, y]
+				#grises.append(pixCentro)
 
-        for i in range(0, P):
-            grises.append(self.funcionS(imagenLBP[xp[i], yp[i]] - pixCentro))
-        decimal = int(self.convDecimal(P, grises))
-        if self.calcularTransicionesBitABit(decimal):
-            return decimal, "Uniforme"
-        else:
-            return decimal, "No-Uniforme"
+				for i in range(0, P):
+					grises.append(self.funcionS(imagenLBP[xp[i], yp[i]] - pixCentro))
+				decimal = int(self.convDecimal(P, grises))
+				if self.calcularTransicionesBitABit(decimal):
+					listaLBP.append(decimal, "Uniforme")
+				else:
+					listaLBP.append(decimal, "No-Uniforme")
 
-    def LocalBinaryPattern(self, region):
+		return listaLBP
+	"""def LocalBinaryPattern(self, region):
         imagenLBP = region.load()
         posX = 1
         posY = 1
@@ -147,7 +155,7 @@ class ImagenFacial:
                     listaNT.append(decimal)
                 posX = posX + 1
             posY = posY + 1
-        return listaT, listaNT
+        return listaT, listaNT"""
 
     def convDecimal(self, nBIts, lista):
         acum = 0
