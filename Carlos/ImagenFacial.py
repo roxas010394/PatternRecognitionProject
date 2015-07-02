@@ -237,11 +237,37 @@ def sacarVectores(archivo):
     linea = linea.split("] [")
     for histograma in linea:
       aux.append(histograma.split(" "))
-    listaHistogramas.append(aux)
     nombre = aux[len(aux) - 1].pop()
+    aux.append(nombre)
+    listaHistogramas.append(aux)
     Diccionario[nombre] = []
-  print listaHistogramas[0]
-  print Diccionario
+  
+  for elemento in listaHistogramas:
+	Diccionario[elemento.pop()].append(elemento)
+
+  return Diccionario
+
+def chiSquareStatistic(sample, model):
+	acum2 = 0
+
+	for i in range(0, len(sample)):
+		acum1 = 0
+		for j in range(0, len(sample[i])):
+			acum1 = acum1 + ((float(sample[i][j]) - float(model[i][j]))**2)/(float(sample[i][j]) + float(model[i][j]))
+		acum2 = acum2 + acum1
+	print acum2
+
+def clasificar(Diccionario, vectorMuestra):
+	DiccionarioValores = {}
+	llaves = Diccionario.keys()
+	acumaux = 0
+	for i in llaves:
+		DiccionarioValores[i]=[]
+	for i in llaves:
+		for j in Diccionario[i]:
+			DiccionarioValores[i].append(chiSquareStatistic(j, vectorMuestra))
+  #print listaHistogramas[0]
+  #print Diccionario
     
 def __init__():
 	while 1:
@@ -262,7 +288,7 @@ def __init__():
 		  sacarVectores("caracteristicas.dat")
 	  elif opcion == 2:
 		  print "Escribe el nombre de la foto [nombre.extensión] a probar" 
-		  sacarVectores("caracteristicas.dat")
+		  clasificar(sacarVectores("caracteristicas.dat"))
 	  elif opcion == 3:
 	    exit()
 
