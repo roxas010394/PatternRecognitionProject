@@ -3,9 +3,9 @@
 from math import pow, cos, sin, pi
 from PIL import Image, ImageOps
 import matplotlib.pyplot as plt
-
+import numpy as np
 class ImagenFacial:
-    def __init__(self, nombreArchivo, K):
+    def __init__(self, nombreArchivo, K, nombreIndividuo):
     #Donde self es una referencia a el mismo objeto
     #nombreArchivo es el nombre de la imagen
     #K son las regiones en las que se va a dividir la imagen
@@ -18,6 +18,7 @@ class ImagenFacial:
             print "El archivo \" "+nombreArchivo+ "\" que usted intenta abrir no existe."
             exit()
         self.__Regiones = K
+        self.__nombreIndividuo = nombreIndividuo
 
     def mostrarImagen(self):
         self.__ImagenCara.show()
@@ -98,38 +99,36 @@ class ImagenFacial:
         tamX, tamY = region.size
         xc = R
         yc = R
-		xcLimite = tamX - xc
-		ycLimite = tamY - yc
-		print str(tamX)+", "+str(tamY)
-		listaLBPU = []
-		listaLBPNU = []
-		
-		for y in range(yc, ycLimite):
-			for x in range(xc, xcLimite)
-				print str(x)+", "+str(y)
+	xcLimite = tamX - xc
+	ycLimite = tamY - yc
+	listaLBPU = []
+	listaLBPNU = []
+	
+	for y in range(yc, ycLimite):
+		for x in range(xc, xcLimite):
+			#print str(x)+", "+str(y)
+			xp = []
+			yp = []
 
-				xp = []
-				yp = []
+			aux = []
 
-				aux = []
+			for i in range(0, P):
+				xp.append(int(round(x + R*cos((2*pi*i)/P))))
+				yp.append(int(round(y + R*sin((2*pi*i)/P))))
 
-				for i in range(0, P):
-					xp.append(int(round(x + R*cos((2*pi*i)/P))))
-					yp.append(int(round(y + R*sin((2*pi*i)/P))))
+			grises = []
+			pixCentro = imagenLBP[x, y]
+			#grises.append(pixCentro)
 
-				grises = []
-				pixCentro = imagenLBP[x, y]
-				#grises.append(pixCentro)
+			for i in range(0, P):
+				grises.append(self.funcionS(imagenLBP[xp[i], yp[i]] - pixCentro))
+			decimal = int(self.convDecimal(P, grises))
+			if self.calcularTransicionesBitABit(decimal):
+				listaLBPU.append(decimal)
+			else:
+				listaLBPNU.append(decimal)
 
-				for i in range(0, P):
-					grises.append(self.funcionS(imagenLBP[xp[i], yp[i]] - pixCentro))
-				decimal = int(self.convDecimal(P, grises))
-				if self.calcularTransicionesBitABit(decimal):
-					listaLBP.append(decimal)
-				else:
-					listaLBPNU.append(decimal)
-
-		return listaLBPU, listaLBPNU
+	return listaLBPU, listaLBPNU
 	"""def LocalBinaryPattern(self, region):
         imagenLBP = region.load()
         posX = 1
@@ -194,8 +193,7 @@ class ImagenFacial:
     def guardarVector(self):
 		archivo = open("caracteristicas.dat", "a")
 		histogramas = self.crearHistograma2()
-		print self.crearVectorDePropiedades(histogramas[0], histogramas[1])
-		archivo.write(str(self.crearVectorDePropiedades(histogramas[0], histogramas[1]))+"\n")
+		archivo.write(str(self.crearVectorDePropiedades(histogramas[0], histogramas[1]))+", "+self.__nombreIndividuo+"\n")
 		archivo.close()
 		
     def crearVectorDePropiedades(self, Lnumeros, LNumerosNU):
@@ -226,7 +224,25 @@ class ImagenFacial:
 
 """hola = ImagenFacial("rikura.jpg", 8)
 hola.guardarVector()"""
-
+def sacarVectores(archivo):
+  archivo = open(archivo, "r")
+  Diccionario = {}
+  listaHistogramas = []
+  for linea in archivo:
+    aux = []
+    linea = linea.replace(",", "")
+    linea = linea.replace("[[", "")
+    linea = linea.replace("]]", "")
+    linea = linea.replace("\n", "")
+    linea = linea.split("] [")
+    for histograma in linea:
+      aux.append(histograma.split(" "))
+    listaHistogramas.append(aux)
+    nombre = aux[len(aux) - 1].pop()
+    Diccionario[nombre] = []
+  print listaHistogramas[0]
+  print Diccionario
+    
 def __init__():
 	while 1:
 	  
@@ -239,10 +255,14 @@ def __init__():
 	  if opcion == 1:
 		  print "Escribe el nombre de la foto [nombre.extensión] a entrenar"
 		  imagen = raw_input()
-		  img = ImagenFacial(imagen, 8)
+		  print "Escribe el nombre del individuo"
+		  nombre = raw_input()
+		  img = ImagenFacial(imagen, 8, nombre)
 		  img.guardarVector()
+		  sacarVectores("caracteristicas.dat")
 	  elif opcion == 2:
 		  print "Escribe el nombre de la foto [nombre.extensión] a probar" 
+		  sacarVectores("caracteristicas.dat")
 	  elif opcion == 3:
 	    exit()
 
