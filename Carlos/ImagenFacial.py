@@ -66,30 +66,27 @@ class ImagenFacial:
                 #i = i + 1
         return listaImagenes
 
-    def crearHistograma(self):
-        listaHistograma = []
-        listaHistogramaNoUniforme = []
-	listaRet = []
-        regiones = self.crearRegiones()
-        for i in regiones:
-            for j in i:
-                listaHistograma.append(self.LocalBinaryPattern2(8, 1, j))
-		
-		for i in range(0, len(listaHistograma)):
-			if listaHistograma[i][1] == "No-Uniforme":
-				listaHistogramaNoUniforme.append(listaHistograma.pop(i))
-			else:
-				listaRet.append(listaHistograma.pop(i)[0])
-        return  listaRet, listaHistogramaNoUniforme
 
-    def crearHistograma2(self):
+    def crearHistograma(self, P, R):
         listaHistograma = []
         listaHistogramaNoUniforme = []
         regiones = self.crearRegiones()
+        DiccionarioBin = {}
+        
+        cont = 1
+        for x in range(0, 2**P):
+		    if self.calcularTransicionesBitABit(x):
+				DiccionarioBin[x] = []
+				print str(cont)+".- "+str(bin(x))
+				cont = cont + 1
+        DiccionarioBin[int("0b"+"1"*(P))]
+        print DiccionarioBin
+        print len(DiccionarioBin)
+			
         for i in regiones:
             for j in i:
-                listaHistograma.append(self.LocalBinaryPattern(8, 1, j)[0])
-                listaHistogramaNoUniforme.append(self.LocalBinaryPattern(8, 1, j)[1])
+                listaHistograma.append(self.LocalBinaryPattern(P, R, j)[0])
+                listaHistogramaNoUniforme.append(self.LocalBinaryPattern(P, R, j)[1])
 	  
         return  listaHistograma, listaHistogramaNoUniforme
 
@@ -129,34 +126,6 @@ class ImagenFacial:
 				listaLBPNU.append(decimal)
 
 	return listaLBPU, listaLBPNU
-	"""def LocalBinaryPattern(self, region):
-        imagenLBP = region.load()
-        posX = 1
-        posY = 1
-        tamX, tamY = region.size
-        pixCentro = imagenLBP[posX, posY]
-        grises = []
-        listaT = []
-        listaNT = []
-        for i in range(0, tamY - 2):
-            posX = 1
-            for j in range(0, tamX - 2):
-                grises.append(self.funcionS(imagenLBP[posX-1, posY-1] - imagenLBP[posX, posY]))
-                grises.append(self.funcionS(imagenLBP[posX, posY-1] - imagenLBP[posX, posY]))
-                grises.append(self.funcionS(imagenLBP[posX+1, posY-1] - imagenLBP[posX, posY]))
-                grises.append(self.funcionS(imagenLBP[posX+1, posY] - imagenLBP[posX, posY]))
-                grises.append(self.funcionS(imagenLBP[posX+1, posY+1] - imagenLBP[posX, posY]))
-                grises.append(self.funcionS(imagenLBP[posX, posY+1] - imagenLBP[posX, posY]))
-                grises.append(self.funcionS(imagenLBP[posX-1, posY+1] - imagenLBP[posX, posY]))
-                grises.append(self.funcionS(imagenLBP[posX-1, posY] - imagenLBP[posX, posY]))
-                decimal = int(self.convDecimal(8,grises))
-                if self.calcularTransicionesBitABit(decimal):
-                    listaT.append(decimal)
-                else:
-                    listaNT.append(decimal)
-                posX = posX + 1
-            posY = posY + 1
-        return listaT, listaNT"""
 
     def convDecimal(self, nBIts, lista):
         acum = 0
@@ -185,14 +154,12 @@ class ImagenFacial:
         #print bin(numero)
         #print nTransiciones
 
-        if nTransiciones > 2:
-            return False
-        else:
+        if nTransiciones == 2:
             return True
 
     def guardarVector(self):
 		archivo = open("caracteristicas.dat", "a")
-		histogramas = self.crearHistograma2()
+		histogramas = self.crearHistograma(8, 1)
 		archivo.write(str(self.crearVectorDePropiedades(histogramas[0], histogramas[1]))+", "+self.__nombreIndividuo+"\n")
 		archivo.close()
 		
