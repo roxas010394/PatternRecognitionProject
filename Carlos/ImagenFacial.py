@@ -9,16 +9,17 @@ class ImagenFacial:
     #Donde self es una referencia a el mismo objeto
     #nombreArchivo es el nombre de la imagen
     #K son las regiones en las que se va a dividir la imagen
+        self.__histogramas = []
         try:
-	    print "Caras/"+nombreArchivo
-            self.__ImagenCara = Image.open("Caras/"+nombreArchivo)
+	    self.__rutaArchivo = "Caras/"+nombreArchivo
+            self.__ImagenCara = Image.open(self.__rutaArchivo)
             self.__ImagenCara = ImageOps.grayscale(self.__ImagenCara)
 	#self.mostrarImagen()
         except IOError:
             print "El archivo \" "+nombreArchivo+ "\" que usted intenta abrir no existe."
             exit()
         self.__Regiones = K
-        self.__nombreIndividuo = nombreIndividuo
+        self.__nombreIndividuo = nombreIndividuo.lower()
 
     def mostrarImagen(self):
         self.__ImagenCara.show()
@@ -69,26 +70,24 @@ class ImagenFacial:
 
     def crearHistograma(self, P, R):
         listaHistograma = []
-        listaHistogramaNoUniforme = []
         regiones = self.crearRegiones()
-        DiccionarioBin = {}
-        
-        cont = 1
-        for x in range(0, 2**P):
-		    if self.calcularTransicionesBitABit(x):
-				DiccionarioBin[x] = []
-				print str(cont)+".- "+str(bin(x))
-				cont = cont + 1
-        DiccionarioBin[int("0b"+"1"*(P))]
-        print DiccionarioBin
-        print len(DiccionarioBin)
-			
         for i in regiones:
             for j in i:
-                listaHistograma.append(self.LocalBinaryPattern(P, R, j)[0])
-                listaHistogramaNoUniforme.append(self.LocalBinaryPattern(P, R, j)[1])
+                listaHistograma.append(self.LocalBinaryPattern(P, R, j))
+        return listaHistograma
+
 	  
         return  listaHistograma, listaHistogramaNoUniforme
+    
+    def crearDiccionarios(self, P):
+      DiccionarioBin = dict()
+      DiccionarioBin["No-Uniformes"] = 0
+      for x in range(0, 2**P):
+	if self.calcularTransicionesBitABit(x) or x == int("0b"+"1"*(P), 2) or x == 0:
+	  DiccionarioBin[x] = 0
+	else:
+	  DiccionarioBin["No-Uniformes"] = 0
+      return DiccionarioBin
 
 
     def LocalBinaryPattern(self, P, R, region):
@@ -100,7 +99,7 @@ class ImagenFacial:
 	ycLimite = tamY - yc
 	listaLBPU = []
 	listaLBPNU = []
-	
+	DiccionarioBin = self.crearDiccionarios(P)
 	for y in range(yc, ycLimite):
 		for x in range(xc, xcLimite):
 			#print str(x)+", "+str(y)
@@ -120,12 +119,11 @@ class ImagenFacial:
 			for i in range(0, P):
 				grises.append(self.funcionS(imagenLBP[xp[i], yp[i]] - pixCentro))
 			decimal = int(self.convDecimal(P, grises))
-			if self.calcularTransicionesBitABit(decimal):
-				listaLBPU.append(decimal)
+			if self.calcularTransicionesBitABit(decimal) or decimal == int("0b"+"1"*(P), 2) or decimal == 0:
+				DiccionarioBin[decimal] = DiccionarioBin[decimal] + 1
 			else:
-				listaLBPNU.append(decimal)
-
-	return listaLBPU, listaLBPNU
+				DiccionarioBin["No-Uniformes"] = DiccionarioBin["No-Uniformes"] + 1
+	return DiccionarioBin
 
     def convDecimal(self, nBIts, lista):
         acum = 0
@@ -159,31 +157,10 @@ class ImagenFacial:
 
     def guardarVector(self):
 		archivo = open("caracteristicas.dat", "a")
-		histogramas = self.crearHistograma(8, 1)
-		archivo.write(str(self.crearVectorDePropiedades(histogramas[0], histogramas[1]))+", "+self.__nombreIndividuo+"\n")
+		#self.__histogramas = self.crearHistograma(8, 1)
+		archivo.write(self.__nombreIndividuo+"\t"+self.__rutaArchivo+"\n")
 		archivo.close()
 		
-    def crearVectorDePropiedades(self, Lnumeros, LNumerosNU):
-				      #[Spot, Spot/Flat, LineEnd, Edge, Corner, otherTextures, Non-Uniform]
-		listaHist = []
-		for region in Lnumeros:
-		  listaVectores = [0, 0, 0, 0, 0, 0, 0]
-		  for num in region:
-		      if num == 0:
-			listaVectores[0] = listaVectores[0] + 1
-		      elif num == 255:
-			listaVectores[1] = listaVectores[1] + 1
-		      elif num ==249:
-			listaVectores[2] = listaVectores[2] + 1
-		      elif num == 60:
-			listaVectores[3] = listaVectores[3] + 1
-		      elif num == 248:
-			listaVectores[4] = listaVectores[4] + 1
-		      else:
-			listaVectores[5] = listaVectores[5] + 1
-		  listaVectores[6] = listaVectores[6] + len(LNumerosNU)
-		  listaHist.append( listaVectores)
-		return listaHist
     def muestraHistograma(self, datos):
 	      plt.bar(datos)
 	      plt.show()
@@ -191,51 +168,78 @@ class ImagenFacial:
 
 """hola = ImagenFacial("rikura.jpg", 8)
 hola.guardarVector()"""
-def sacarVectores(archivo):
+def sacarVectores(nfile):
+  Diccionario = crearDiccionariosIndividuos(nfile)
+  archivo = open(nfile, "r")
+  DicHistogramas = []
+  
+  for linea in archivo:
+    linea = linea.replace("\n", "")
+    linea = linea.replace("Caras/", "")
+    linea = linea.split("\t")    
+    nombre = linea[0]
+    Diccionario[nombre].append(linea[1])
+  archivo.close()
+  DicHistogramas = calcularVectores(Diccionario, nfile)
+  return DicHistogramas
+    
+def calcularVectores(Diccionario, archivo):
+  llaves = Diccionario.keys()
+  DiccionarioHistogramas = crearDiccionariosIndividuos(archivo)
+  for llave in llaves:
+    for listaDir in Diccionario[llave]:
+      Imagenes = ImagenFacial(listaDir, 8, llave)
+      DiccionarioHistogramas[llave].append(Imagenes.crearHistograma(8, 1))
+  return DiccionarioHistogramas
+
+def crearDiccionariosIndividuos(archivo):
   archivo = open(archivo, "r")
   Diccionario = {}
-  listaHistogramas = []
   for linea in archivo:
     aux = []
-    linea = linea.replace(",", "")
-    linea = linea.replace("[[", "")
-    linea = linea.replace("]]", "")
     linea = linea.replace("\n", "")
-    linea = linea.split("] [")
-    for histograma in linea:
-      aux.append(histograma.split(" "))
-    nombre = aux[len(aux) - 1].pop()
-    aux.append(nombre)
-    listaHistogramas.append(aux)
+    linea = linea.split("\t")    
+    nombre = linea[0]
     Diccionario[nombre] = []
-  
-  for elemento in listaHistogramas:
-	Diccionario[elemento.pop()].append(elemento)
-
   return Diccionario
 
 def chiSquareStatistic(sample, model):
-	acum2 = 0
+  if len(sample) != len(model):
+    print "Error: the number of region does not have coincidence"
+    exit()
+  tamRegiones = len(model)
+  acum = 0
+  for x in range(0, tamRegiones):
+    llaves = sample[x].keys()
+    acum2 = 0
+    for y in llaves:
+      if sample[x][y] == 0 and model[x][y] == 0:
+	continue
+      acum2 = acum2 + ((sample[x][y] - model[x][y])**2)/float(sample[x][y] + model[x][y])
+    acum = acum + acum2
+  return acum
 
-	for i in range(0, len(sample)):
-		acum1 = 0
-		for j in range(0, len(sample[i])):
-			acum1 = acum1 + ((float(sample[i][j]) - float(model[i][j]))**2)/(float(sample[i][j]) + float(model[i][j]))
-		acum2 = acum2 + acum1
-	print acum2
-
-def clasificar(Diccionario, vectorMuestra):
-	DiccionarioValores = {}
-	llaves = Diccionario.keys()
-	acumaux = 0
-	for i in llaves:
-		DiccionarioValores[i]=[]
-	for i in llaves:
-		for j in Diccionario[i]:
-			DiccionarioValores[i].append(chiSquareStatistic(j, vectorMuestra))
+def clasificar(DiccionarioModelos, DiccionarioMuestra):
+  personas = DiccionarioModelos.keys()
+  DicResultados = {}
+  for nombres in personas:
+    DicResultados[nombres] = []
+    for imagen in DiccionarioModelos[nombres]:
+      DicResultados[nombres].append(chiSquareStatistic(DiccionarioMuestra, imagen))
+  obtenerClaseperteneciante(DicResultados)
+  print DicResultados
+  #print DiccionarioModelos["aaron"][0][0]#[71]
   #print listaHistogramas[0]
   #print Diccionario
-    
+def obtenerClaseperteneciante(DicResultados):
+  menor = DicResultados[DicResultados.keys()[0]]
+  auxPersona = ""
+  for persona in DicResultados:
+    for resultado in DicResultados[persona]:
+      if resultado < menor:
+	menor = resultado
+	auxPersona = persona
+  print persona
 def __init__():
 	while 1:
 	  
@@ -252,10 +256,13 @@ def __init__():
 		  nombre = raw_input()
 		  img = ImagenFacial(imagen, 8, nombre)
 		  img.guardarVector()
-		  sacarVectores("caracteristicas.dat")
 	  elif opcion == 2:
 		  print "Escribe el nombre de la foto [nombre.extensión] a probar" 
-		  clasificar(sacarVectores("caracteristicas.dat"))
+		  imagenEntrada = raw_input()
+		  img = ImagenFacial(imagenEntrada, 8, "")
+		  DatosPrueba = img.crearHistograma(8, 1)
+		  DatosModelos = sacarVectores("caracteristicas.dat")
+		  clasificar(DatosModelos, DatosPrueba)
 	  elif opcion == 3:
 	    exit()
 
