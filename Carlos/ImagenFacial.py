@@ -4,6 +4,8 @@ from math import pow, cos, sin, pi
 from PIL import Image, ImageOps
 import matplotlib.pyplot as plt
 import numpy as np
+import Tkinter
+import tkMessageBox
 class ImagenFacial:
     def __init__(self, nombreArchivo, K, nombreIndividuo):
     #Donde self es una referencia a el mismo objeto
@@ -13,16 +15,17 @@ class ImagenFacial:
         try:
 	    self.__rutaArchivo = "Caras/"+nombreArchivo
             self.__ImagenCara = Image.open(self.__rutaArchivo)
+            self.__ImagenMostrar = Image.open(self.__rutaArchivo)
             self.__ImagenCara = ImageOps.grayscale(self.__ImagenCara)
 	#self.mostrarImagen()
         except IOError:
-            print "El archivo \" "+nombreArchivo+ "\" que usted intenta abrir no existe."
+            print "The file \" "+nombreArchivo+ "\" doesn't exist."
             exit()
         self.__Regiones = K
         self.__nombreIndividuo = nombreIndividuo.lower()
 
     def mostrarImagen(self):
-        self.__ImagenCara.show()
+        self.__ImagenMostrar.show()
 
     def asignarImagen(self, nombreArchivo):
         self.__ImagenCara = Image.open(nombreArchivo)
@@ -226,8 +229,9 @@ def clasificar(DiccionarioModelos, DiccionarioMuestra):
     DicResultados[nombres] = []
     for imagen in DiccionarioModelos[nombres]:
       DicResultados[nombres].append(chiSquareStatistic(DiccionarioMuestra, imagen))
-  obtenerClaseperteneciante(DicResultados)
+  tkMessageBox.showinfo("Results", "This photo belongs to: "+obtenerClaseperteneciante(DicResultados))
   print DicResultados
+  #print "This photo belongs to : "+ obtenerClaseperteneciante(DicResultados)
   #print DiccionarioModelos["aaron"][0][0]#[71]
   #print listaHistogramas[0]
   #print Diccionario
@@ -239,28 +243,28 @@ def obtenerClaseperteneciante(DicResultados):
       if resultado < menor:
 	menor = resultado
 	auxPersona = persona
-  print persona
+  return auxPersona
 def __init__():
 	while 1:
 	  
-	  print "Elige una opción"
-	  print "1.- Entrenar"
-	  print "2.- Probar"
-	  print "3.-Salir"
-	  print "Elige una opción"
+	  print "Choose an option"
+	  print "1.- Train"
+	  print "2.- Test a photo"
+	  print "3.-Exit"
 	  opcion = input()
 	  if opcion == 1:
-		  print "Escribe el nombre de la foto [nombre.extensión] a entrenar"
+		  print "Write the name of the file [name.ext] which the program is going to train."
 		  imagen = raw_input()
-		  print "Escribe el nombre del individuo"
+		  print "Write the name of the person"
 		  nombre = raw_input()
 		  img = ImagenFacial(imagen, 8, nombre)
 		  img.guardarVector()
 	  elif opcion == 2:
-		  print "Escribe el nombre de la foto [nombre.extensión] a probar" 
+		  print "Write the name of the file [name.ext] which the program is going to testr" 
 		  imagenEntrada = raw_input()
 		  img = ImagenFacial(imagenEntrada, 8, "")
 		  DatosPrueba = img.crearHistograma(8, 1)
+		  img.mostrarImagen()
 		  DatosModelos = sacarVectores("caracteristicas.dat")
 		  clasificar(DatosModelos, DatosPrueba)
 	  elif opcion == 3:
